@@ -3,7 +3,7 @@ const mongoose = require("mongoose")
 const isValid = function (value) {
     if (typeof value === 'undefined' || value === null) return false
     if (typeof value === 'string' && value.trim().length === 0) return false 
-    if (typeof value === 'number' && value.toString().trim().length === 0) return false
+   // if (typeof value === 'number' && value.toString().trim().length === 0) return false
     return true;
 }
 //  && typeof value === ['string']
@@ -57,6 +57,7 @@ const isValidPinCode = function(value){
 
 
 
+
 const isValidDate = (date) => {
     //instead we can use date regex
     const specificDate = new Date(date).setHours(0, 0, 0, 0);
@@ -68,8 +69,22 @@ const isValidCurrencyFormat = function (currencyFormat) {
     return ['₹'].indexOf(currencyFormat) !== -1
 }
 
-const isValidSize = function (size) {
-    return ["S", "XS","M","X", "L","XXL", "XL"].indexOf(size) !== -1
+const isValidSize =  function (size){
+    const availableSizes = ["S", "XS","M","X", "L","XXL", "XL"]
+    let wrongSizes = []
+    for(let i=0; i<size.length; i++){
+        if(!(availableSizes.includes(size[i]))){
+           // return res.status(400).send({status:false, message:`invalid availableSizes for ${size[i]} size`})
+           wrongSizes.push(size[i])
+        }
+    }
+    if(wrongSizes.length){
+        return wrongSizes
+    } else {
+        return true
+    }
+   
+
 }
 
 

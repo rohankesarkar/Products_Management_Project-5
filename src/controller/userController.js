@@ -53,7 +53,7 @@ aws.config.update(
 const registerUser = async function (req, res) {
   try {
    // const requestBody = req.body;
-    const requestBody = JSON.parse(req.body.data);
+    const requestBody = req.body;
    // console.log(req.body.data)
     const address = JSON.parse(req.body.address)
    // console.log(requestBody)
@@ -258,6 +258,7 @@ const registerUser = async function (req, res) {
       return res.status(400).send({ msg: "No file found in request" })
     }
     requestBody.profileImage = uploadedFileURL;
+    requestBody.address = address
 
     const user = new userModel(requestBody)
     
@@ -310,13 +311,23 @@ const loginUser = async function (req, res) {
         .send({ status: false, message: "enter valid password" });
     }
 
-    let user = await userModel.findOne({ email: email, password: password });
+    let user = await userModel.findOne({ email: email});
+    let isValidPassword
+    if (user) {
+        // this line will return Boolean result
+         isValidPassword = await bcrypt.compare(req.body.password, user.password)
+         
+    }
+
+    console.log(isValidPassword)
     
-    if (!user)
+    if (!isValidPassword)
       return res.status(404).send({
         status: false,
-        msg: "email or the password is not corerct or user with this email is not present",
+        msg: "email or the password is not correct or user with this email is not present",
       });
+
+    
      
     let token = jwt.sign(
       {
@@ -326,7 +337,7 @@ const loginUser = async function (req, res) {
       },
       "PROJECT3BOOKMANAGEMENTPROJECTDONYBYGROUP7",
       {
-        expiresIn: "90m",
+        expiresIn: "2m",
       }
     );
     const userLogin = {
@@ -345,10 +356,62 @@ const loginUser = async function (req, res) {
 
 
 
-const updateUser = async (req,res) => {
+const getUser = async function (req, res) {
+    try {
+        const userId = req.params.userId
+        const body = req.body
 
-    const requestBody = req.body
-    if(!validator.isValidBody(requestBody)) requestBody = JSON.parse(req.body.data)
+        if (!(validator.isValidobjectId(userId) && validator.isValid(userId))) {
+            return res.status(400).send({ status: false, msg: "userId is not valid" })
+        }
+        if (validator.isValidBody(body)) {
+            return res.status(400).send({ status: false, msg: "body should be empty" })
+        }
+
+        const userData = await userModel.findById({ _id: userId })
+        if (userData) {
+            return res.status(200).send({ status: true, msg: "user profile details", data: userData })
+        } else {
+            return res.status(404).send({ status: false, msg: "userid does not exist" })
+        }
+    } catch (err) {
+        return res.status(500).send({ status: false, msg: err.message })
+    }
+}
+
+module.exports.getUser = getUser
+
+
+
+
+
+
+
+
+
+
+
+
+
+const updateUser = async function(req,res){
+    try{
+    const userId = req.params.userId
+    let address = req.body.address
+       // console.log(req.body.address)
+    // if(!validator.isValid(address)){
+    //     return res.status(400).send({status:false, message:"invalid address or address is not present"})
+    // }
+
+
+
+
+
+
+
+    let requestBody =req.body
+
+   // const requestBody = req.body
+    
 
     if(!validator.isValidBody(requestBody)){
         return res
@@ -356,8 +419,8 @@ const updateUser = async (req,res) => {
         .send({ status: false, message: "ERROR! : request body is empty" });
     }
     
-    const { fname, lname, phone, email, password} = requestBody;
-    const address = JSON.parse(req.body.address)
+    let { fname, lname, phone, email, password} = requestBody;
+    
 
     if(fname){
         let isName = /^[A-Za-z ]*$/;
@@ -376,6 +439,7 @@ const updateUser = async (req,res) => {
     }
 
     if(lname){
+        let isName = /^[A-Za-z ]*$/;
         
       if (!validator.isValid(lname)) {
         return res
@@ -474,12 +538,213 @@ const updateUser = async (req,res) => {
  }
 
 
+        
+    let uploadedFileURL;
+
+    let files = req.files // file is the array
+
+    if (files && files.length > 0) {
+
+      uploadedFileURL = await uploadFile(files[0])
+
+      if(uploadedFileURL){
+          req.body.profileImage = uploadedFileURL
+      } else{
+          return res.status(400).send({status:false, message:"error uploadedFileURL is not present"})
+      }
+
+    }
+
+
+   // address =JSON.parse(JSON.stringify(req.body.address))
+
+    // console.log(address, typeof address)
+    // if(!(typeof address == Object)){
+      //   address = JSON.parse(req.body.address)
+    // }
+   // console.log(address, typeof address)
+
+    //if(!address) address = JSON.parse(req.body.address)
+
+    // if(! validator.isValidBody(address)){
+    //     return res.status(400).send({status:false, message:"invalid address or address is not in proper format"})
+    // }
+
+
+    if(address){
+        console.log(address)
+        
+        const isAddressExists = await userModel.findOne({_id:userId, isDeleted:false})
+
+        if(!isAddressExists){
+            return res.status(404).send({status:false, message:`user with this ID: ${userId} is not found`})
+        }
+
+        let updateAddress = isAddressExists.address
+        console.log(updateAddress)
+
+        console.log(address, typeof address)
+
+        if(address.shipping){
+            
+            // if (address.shipping.street="") {
+            //     return res
+            //       .status(400)
+            //       .send({ status: false, message: "enter valid shipping street address" });
+            //   }
+            //   console.log(address.shipping.street, typeof address.shipping.street)
+
+            if(address.shipping.street){
+
+                if (!validator.isValid(address.shipping.street)) {
+                    return res
+                      .status(400)
+                      .send({ status: false, message: "enter valid shipping street address" });
+                  }
+                updateAddress.shipping.street  = address.shipping.street
+
+            }
+
+            // if (address.shipping.pincode="") {
+            //     return res
+            //       .status(400)
+            //       .send({ status: false, message: "enter valid shipping pincode address" });
+            //   }
+
+            
+            if(address.shipping.pincode){
+
+                if (!validator.isValid(address.shipping.pincode)) {
+                    return res
+                      .status(400)
+                      .send({ status: false, message: "enter valid shipping pincode address" });
+                  }
+
+                
+                  if (!/^[1-9]{1}[0-9]{5}$/.test(address.shipping.pincode)) {
+                    return res
+                      .status(422)
+                      .send({
+                        status: false,
+                        message: `${address.shipping.pincode}enter valid shipping picode of 6 digit and which do not start with 0`,
+                      });
+                }
+
+                updateAddress.shipping.pincode  = address.shipping.pincode
+            }
+
+
+            // if (address.shipping.city="") {
+            //     return res
+            //       .status(400)
+            //       .send({ status: false, message: "enter valid shipping city address" });
+            //   }
+
+            if(address.shipping.city){
+
+                if (!validator.isValid(address.shipping.city)) {
+                    return res
+                      .status(400)
+                      .send({ status: false, message: "enter valid shipping city address" });
+                  }
+
+                updateAddress.shipping.city  = address.shipping.city
+                
+            }
+        }
+
+
+
+        if(address.billing){
+
+            // if (address.billing.street="") {
+            //     return res
+            //       .status(400)
+            //       .send({ status: false, message: "enter valid billing street address" });
+            //   }
+            if(address.billing.street){
+
+                if (!validator.isValid(address.billing.street)) {
+                    return res
+                      .status(400)
+                      .send({ status: false, message: "enter valid billing street address" });
+                  }
+
+                updateAddress.billing.street  = address.billing.street
+
+            }
+
+
+            // if (address.billing.pincode="") {
+            //     return res
+            //       .status(400)
+            //       .send({ status: false, message: "enter valid billing pincode address" });
+            //   }
+            if(address.billing.pincode){
+
+                if (!validator.isValid(address.billing.pincode)) {
+                    return res
+                      .status(400)
+                      .send({ status: false, message: "enter valid billing pincodeaddress" });
+                  }
+
+                if (!/^[1-9]{1}[0-9]{5}$/.test(address.billing.pincode)) {
+                    return res
+                      .status(422)
+                      .send({
+                        status: false,
+                        message: `${address.billing.pincode}enter valid billing picode of 6 digit and which do not start with 0`,
+                      });
+                }
+                  
+
+                updateAddress.billing.pincode  = address.billing.pincode
+            }
+
+            // if (address.billing.city="") {
+            //     return res
+            //       .status(400)
+            //       .send({ status: false, message: "enter valid billing city address" });
+            //   }
+            if(address.billing.city){
+
+                if (!validator.isValid(address.billing.city)) {
+                    return res
+                      .status(400)
+                      .send({ status: false, message: "enter valid billing city address" });
+                  }
+
+
+                updateAddress.billing.city = address.billing.city
+            }   
+        }
+
+
+        req.body.address = updateAddress
+    }
 
 
 
 
 
 
+
+
+    const update = req.body
+
+
+    const updatedData = await userModel.findOneAndUpdate({ _id: userId },update,{ new:true})
+        if (updatedData) {
+            return res.status(200).send({ status: true, msg: "user profile updated", data: updatedData })
+        } else {
+            return res.status(400).send({ status: false, msg: "userid does not exist" })
+        }
+
+   
+
+} catch(error){
+    return res.status(500).send({status:false, message:error.message})
+}
 
 
 }
@@ -494,5 +759,19 @@ const updateUser = async (req,res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 module.exports.loginUser = loginUser;
 module.exports.registerUser = registerUser;
+module.exports.updateUser = updateUser;
