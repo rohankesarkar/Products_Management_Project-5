@@ -129,6 +129,7 @@ const updateProduct = async function(req,res){
                 return res.status(400).send({status:false, message:"Bad request please provoide valid style"})
             }
         }
+        
         console.log(availableSizes)
           
         if(availableSizes){

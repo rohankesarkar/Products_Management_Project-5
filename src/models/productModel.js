@@ -48,7 +48,8 @@ let productSchema = new mongoose.Schema(
       
     },
     installments: {
-      type: Number
+      type: Number,
+      default:0
       
     },
 
@@ -63,4 +64,4 @@ let productSchema = new mongoose.Schema(
 
 
 
-module.exports = mongoose.model("product32", productSchema);
+module.exports = mongoose.model("Product32", productSchema);

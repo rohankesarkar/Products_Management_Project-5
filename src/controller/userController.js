@@ -397,7 +397,10 @@ const updateUser = async function(req,res){
     try{
     const userId = req.params.userId
     let address = req.body.address
-       // console.log(req.body.address)
+
+
+
+    // console.log(req.body.address)
     // if(!validator.isValid(address)){
     //     return res.status(400).send({status:false, message:"invalid address or address is not present"})
     // }
