@@ -78,13 +78,13 @@ const createCart = async (req, res) => {
           if(!(Number(productPresent.installments) >= ( Number(quantity) || 1))){
                 return res.status(400).send({status:false, message:`stock is less than required quantity Available Stock : ${productPresent.installments}`})
         }
-        let currentInstalments = Number(productPresent.installments) - ( Number(quantity) || 1)
-        console.log(currentInstalments)
-        const productInsta = await productModel.findByIdAndUpdate({_id:productId},{$set:{installments:currentInstalments}},{new:true} )
+        // let currentInstalments = Number(productPresent.installments) - ( Number(quantity) || 1)
+        // console.log(currentInstalments)
+       // const productInsta = await productModel.findByIdAndUpdate({_id:productId},{$set:{installments:currentInstalments}},{new:true} )
 
 
          const cartExists = await cartModel.findOne({userId:userId})
-
+        console.log(cartExists)
          if(cartExists){
 
             let itemsExists = cartExists.items
@@ -97,9 +97,17 @@ const createCart = async (req, res) => {
                     itemsExists[i].quantity = Number(itemsExists[i].quantity) + (Number(quantity) || 1)
                     let totalCurrentProductPrice = Number( productPresent.price )* (Number(quantity) || 1)
                     cartExists.totalPrice = Number(cartExists.totalPrice) + Number(totalCurrentProductPrice)
-                    const updatedCart = await cartModel.findOneAndUpdate(userId, cartExists, {new:true})
+                    console.log("before")
+                     console.log(cartExists)
+
+                    const updatedCart = await cartModel.findOneAndUpdate({userId:userId}, cartExists, {new:true})
+                    console.log("after")
+                    console.log(updatedCart)
+
+                    console.log(cartExists)
+
                     count++
-                    return res.status(200).send({status:true, message:"updation DONE! ",data:updatedCart, productInsta:productInsta})
+                    return res.status(200).send({status:true, message:"updation DONE! ",data:updatedCart})
                    
                    
                 }
@@ -110,8 +118,8 @@ const createCart = async (req, res) => {
                 cartExists.totalPrice = Number(cartExists.totalPrice) + Number(totalCurrentProductPrice)
                 cartExists.totalItems= Number(cartExists.totalItems) + 1
                 itemsExists.push(productObj)
-                const updatedCart = await cartModel.findOneAndUpdate(userId, cartExists, {new:true})
-                return res.status(200).send({status:true, message:"updation DONE! ",data:updatedCart,productInsta:productInsta})
+                const updatedCart = await cartModel.findOneAndUpdate({userId:userId}, cartExists, {new:true})
+                return res.status(200).send({status:true, message:"updation DONE! ",data:updatedCart/*,productInsta:productInsta*/})
                     
 
                 
@@ -137,7 +145,7 @@ const createCart = async (req, res) => {
          cartDocument.totalItems =  1
 
          const createCart = await cartModel.create(cartDocument)
-         return res.status(201).send({status:true, data:createCart, productInsta:productInsta})
+         return res.status(201).send({status:true, data:createCart})
 
 
         } catch (error){
@@ -217,15 +225,16 @@ const updateCart = async (req, res) => {
         if(items[i].productId == productId){
             console.log("if")
            cartPresent.items[i].quantity = Number(cartPresent.items[i].quantity) -1
-            const updatedCart =await cartModel.findByIdAndUpdate({_id:cartId},cartPresent, {new:true})
-            const updateProduct =await productModel.findByIdAndUpdate({_id:productId},{$inc:{installments: 1}}, {new:true})
+           cartPresent.totalPrice = Number(cartPresent.totalPrice) - Number(productPresent.price)            
+           const updatedCart =await cartModel.findByIdAndUpdate({_id:cartId},cartPresent, {new:true})
+           // const updateProduct =await productModel.findByIdAndUpdate({_id:productId},{$inc:{installments: 1}}, {new:true})
             if(Number(items[i].quantity) == 0){
             console.log("innerif")
                 
                 items.splice(items[i],1)
-                return res.status(200).send({status:true, message:"Success : product Remove ", data:{updatedCart,removeProduct:1,updateProduct:updateProduct}})
+                return res.status(200).send({status:true, message:"Success : product Remove ", data:{updatedCart,removeProduct:1}})
             } else {
-                return res.status(200).send({status:true, message:"Success : product quantity decreamented ", data:{updatedCart,removeProduct:0,updateProduct:updateProduct}})
+                return res.status(200).send({status:true, message:"Success : product quantity decreamented ", data:{updatedCart,removeProduct:0}})
      
 
             }
@@ -245,5 +254,76 @@ const updateCart = async (req, res) => {
 
 }
 
+
+
+const getCartById = async function (req, res) {
+    try {
+        const userId = req.params.userId;
+
+        const cartDetails = await cartModel.findOne({userId:userId})
+
+        if (!cartDetails) {
+            return res.status(404).send({ status: false, msg: `cart not found` })
+        }
+
+            return res.status(200).send({ status: true, message: "Success", data: cartDetails })
+
+        
+    } catch (err) {
+
+        return res.status(500).send({ status: false, error: err.message })
+    }
+}
+
+
+
+
+const deleteCart = async function (req, res) {
+    try {
+
+        let userId = req.params.userId
+
+        if (!validator.isValidobjectId(userId)) {
+            return res.status(400).send({ status: false, msg: "userId is not valid" })
+        }
+
+        let deletedCart = await cartModel.findOneAndUpdate({ userId: userId }, { totalItems: 0, totalPrice: 0 , items: []}, { new: true })
+        
+        if (deletedCart) {
+            return res.status(200).send({ status: true, msg: " Done, your cart is empty" ,deletedCart:deletedCart})
+        } else {
+            return res.status(404).send({ status: false, msg: "cart not found" })
+        }
+    } catch (err) {
+        return res.status(500).send({ status: false, msg: err.message })
+    }
+}
+
+
+
+
+module.exports.deleteCart = deleteCart
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 module.exports.updateCart = updateCart
 module.exports.createCart = createCart
+module.exports.getCartById = getCartById
+

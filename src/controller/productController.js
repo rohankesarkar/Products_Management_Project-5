@@ -1,6 +1,8 @@
 const productModel = require('../models/productModel')
 const validator = require("../validator/validator");
 const awsUrl = require("../aws/awsUrl")
+const cartModel = require("../models/cartModel");
+
 
 
 
@@ -129,7 +131,7 @@ const updateProduct = async function(req,res){
                 return res.status(400).send({status:false, message:"Bad request please provoide valid style"})
             }
         }
-        
+
         console.log(availableSizes)
           
         if(availableSizes){
@@ -418,11 +420,13 @@ module.exports.getProduct = getProduct
 
 const createProduct = async function (req, res) {
     try {
+        let availableSizes = JSON.parse(req.body.availableSizes)
+        console.log(availableSizes)
 
         const body = JSON.parse(JSON.stringify(req.body))
 
-        let { title, description, price, currencyId, currencyFormat, productImage, availableSizes } = body
-
+        let { title, description, price, currencyId, currencyFormat } = body
+            //const availableSizes = JSON.parse(availableSizes)
         if (!validator.isValidBody(body)) {
             return res.status(400).send({ status: false, msg: "body should not be empty" })
         }
@@ -491,6 +495,7 @@ const createProduct = async function (req, res) {
         if (size != true) {
             return res.status(400).send({ status: false, msg: `${size} is not a valid size` })
         }
+        body.availableSizes = availableSizes
 
         let uploadedFileURL;
 
@@ -554,13 +559,44 @@ const deleteProduct = async function (req, res) {
             return res.status(400).send({ status: false, msg: "productId is not valid" })
         }
 
-        let deletedData = await productModel.findOneAndUpdate({ _id: productId, isDeleted: false }, { isDeleted: true, deletedAt: new Date() }, { new: true })
+       let deletedData = await productModel.findOneAndUpdate({ _id: productId, isDeleted: false }, { isDeleted: true, deletedAt: new Date() }, { new: true })
         
-        if (deletedData) {
+       if (deletedData) {
+          // return res.status(200).send({ status: true, msg: "product deleted successfully" })
+
+            const removeProduct = await cartModel.find({productId:productId})
+            console.log(removeProduct)
+
+            if(removeProduct.length){
+                
+                for(let i = 0; i< removeProduct.length; i++){
+
+                    for(let j=0; j< removeProduct[i].items.length; j++){
+
+                        if(removeProduct[i].items[j].productId == req.params.productId){
+                            removeProduct[i].items.splice(j,1)
+                            let cartId = removeProduct[i]._id
+                            await cartModel.findByIdAndUpdate({_id:cartId}, removeProduct[i], {new:true})
+                        }
+
+                    }
+
+
+                }
+
+            }
             return res.status(200).send({ status: true, msg: "product deleted successfully" })
+
+
+
+
         } else {
             return res.status(404).send({ status: false, msg: "product not found" })
         }
+
+
+
+
 
     } catch (err) {
         return res.status(500).send({ status: false, msg: err.message })
