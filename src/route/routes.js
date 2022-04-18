@@ -3,6 +3,7 @@ const router = express.Router()
 const userController = require("../controller/userController")
 const productController = require("../controller/productController")
 const cartController = require('../controller/cartController')
+const orderController = require("../controller/orderController")
 const auth = require("../middleware/middleware")
 
 
@@ -15,6 +16,11 @@ router.post('/createUser', userController.registerUser)
 router.get('/user/:userId/profile',auth.authentication, userController.getUser)
 router.post('/loginUser', userController.loginUser)
 router.put('/updateUser/:userId', auth.authorization, userController.updateUser)
+
+
+// please check availablesize regex validation
+
+
 
 
 
@@ -31,7 +37,14 @@ router.delete('/users/:userId/cart', cartController.deleteCart)
 
 
 
-// changes  done
+
+router.post('/users/:userId/orders', orderController.createOrder)
+router.put('/users/:userId/orders', orderController.updateOrder)
+
+
+
+
+
 
 
 

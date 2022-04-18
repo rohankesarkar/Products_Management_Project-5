@@ -38,7 +38,7 @@ const isValidPassword = function(value) {
 }
 
 const isValidPrice = function(value){
-    if(!(/^\d{0,8}(\.\d{1,2})?$/.test(value.trim()))){
+    if(!(/^\d{0,8}(\.\d{1,2})?$/.test(value))){
         return false
     }
     return true

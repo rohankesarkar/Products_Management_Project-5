@@ -54,4 +54,4 @@ userSchema.post('save', async function(next){
 
 
 
-module.exports = mongoose.model('project5', userSchema)
+module.exports = mongoose.model('User32', userSchema)

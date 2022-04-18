@@ -14,7 +14,7 @@ const createCart = async (req, res) => {
     if(!validator.isValidBody(requestBody)){
         return res.status(400).send({status:false, message:"Bad Request request body is empty"})
     }
-    const {productId, quantity,totalPrice, totalItems  } = requestBody
+    const {productId, quantity, } = requestBody
 
     // if(!validator.isValid(price)){
     //     return res.status(400).send({status:false, message:"Bad Request price is invalid or empty"})
@@ -68,7 +68,7 @@ const createCart = async (req, res) => {
             });
             }
 
-            if(!/^[1-9]{1}[0-9]{1,15}$/.test(quantity)){
+            if(!/^[1-9]{1}[0-9]{0,15}$/.test(quantity)){
                 return res.status(400).send({status:false, message:"Bad request please provoide valid quantity with minimum 1 number"})
             }
             
@@ -217,6 +217,9 @@ const updateCart = async (req, res) => {
           .send({ status: false, message: `cart with this id : ${cartId} not found`});
       }
       const items = cartPresent.items
+      if(!items.length){
+        return res.status(404).send({status:false, message:"sorry your card is empty"})
+      }
     
 
       for(let i=0; i< items.length; i++){
@@ -225,19 +228,37 @@ const updateCart = async (req, res) => {
         if(items[i].productId == productId){
             console.log("if")
            cartPresent.items[i].quantity = Number(cartPresent.items[i].quantity) -1
-           cartPresent.totalPrice = Number(cartPresent.totalPrice) - Number(productPresent.price)            
+           console.log(items[i].quantity, cartPresent.items[i],items[i])
+           cartPresent.totalPrice = Number(cartPresent.totalPrice) - Number(productPresent.price)  
+           if(Number(items[i].quantity) == 0){
+            items.splice(i,1)
+            cartPresent.totalItems = Number(cartPresent.totalItems) -1
+           }
+
            const updatedCart =await cartModel.findByIdAndUpdate({_id:cartId},cartPresent, {new:true})
            // const updateProduct =await productModel.findByIdAndUpdate({_id:productId},{$inc:{installments: 1}}, {new:true})
-            if(Number(items[i].quantity) == 0){
-            console.log("innerif")
+            // if(Number(items[i].quantity) == 0){
+              
+
+            //   cartExists.totalItems = cartExists.totalItems = Number(cartExists.totalItems) - 1
+            //         cartExists.items[itemIndex].productId = { $unset: { "cartExists.items[itemIndex].productId": 1 } }
+            //         cartExists.totalPrice = Number(cartExists.totalPrice) - Number(productExist.price)
+
+            //         let removeProduct = await cartModel.findOneAndUpdate({ userId: userId }, cartExists, { new: true })
+            //         return res.status(200).send({ status: false, msg: "product removed successfully", data: removeProduct })
+
+
+
+
+            // console.log("innerif")
                 
-                items.splice(items[i],1)
-                return res.status(200).send({status:true, message:"Success : product Remove ", data:{updatedCart,removeProduct:1}})
-            } else {
+            //     items.splice(items[i],1)
+            //     return res.status(200).send({status:true, message:"Success : product Remove ", data:{updatedCart,removeProduct:1}})
+            // } else {
                 return res.status(200).send({status:true, message:"Success : product quantity decreamented ", data:{updatedCart,removeProduct:0}})
      
 
-            }
+            // }
 
         }
 
