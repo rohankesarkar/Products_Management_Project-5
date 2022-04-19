@@ -35,8 +35,8 @@ router.delete('/users/:userId/cart', auth.authentication,cartController.deleteCa
 
 
 
-router.post('/users/:userId/orders', orderController.createOrder)
-router.put('/users/:userId/orders', orderController.updateOrder)
+router.post('/users/:userId/orders',auth.authorization, orderController.createOrder)
+router.put('/users/:userId/orders',auth.authorization, orderController.updateOrder)
 
 
 router.get("*", async function(req,res){
