@@ -38,7 +38,7 @@ const isValidPassword = function(value) {
 }
 
 const isValidPrice = function(value){
-    if(!(/^\d{0,8}(\.\d{1,2})?$/.test(value))){
+    if(!(/^\d{0,8}(\.\d{1,4})?$/.test(value))){
         return false
     }
     return true
@@ -72,6 +72,10 @@ const isValidCurrencyFormat = function (currencyFormat) {
 const isValidSize =  function (size){
     const availableSizes = ["S", "XS","M","X", "L","XXL", "XL"]
     let wrongSizes = []
+    console.log(Array.isArray(size) , typeof(size))
+    if( !Array.isArray(size) || !size.length){
+      return size
+    }
     for(let i=0; i<size.length; i++){
         if(!(availableSizes.includes(size[i]))){
            // return res.status(400).send({status:false, message:`invalid availableSizes for ${size[i]} size`})

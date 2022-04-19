@@ -22,8 +22,8 @@ const updateProduct = async function(req,res){
               message: "Bad Request there is no data in input field",
             });
           }
-          const {description, title, isFreeShipping, price, style,availableSizes, installments } = req.body
-
+          const {description, title, isFreeShipping, price, style, installments } = req.body
+          const bodyArray = Object.keys(req.body)
          // const availableSizes = JSON.parse(req.body.availableSizes)
           if (!productId) {
             return res.status(400).send({
@@ -56,7 +56,7 @@ const updateProduct = async function(req,res){
 
 
 
-          if (title) {
+          if (bodyArray.includes("title")) {
 
             if(!validator.isValid(title)){
                 return res.status(400).send({status:false, message:"Bad request please provoide valid title"})
@@ -92,7 +92,7 @@ const updateProduct = async function(req,res){
           }
       
          
-          if(isFreeShipping){
+          if(bodyArray.includes("isFreeShipping")){
 
 
             if(!validator.isValid(isFreeShipping) || isFreeShipping != "true" || isFreeShipping != "false"  ){
@@ -102,7 +102,7 @@ const updateProduct = async function(req,res){
           }
       
 
-          if(price){
+          if(bodyArray.includes("price")){
              // check price validation
              //only accept digit
 
@@ -117,7 +117,7 @@ const updateProduct = async function(req,res){
           }
       
 
-          if(description){
+          if(bodyArray.includes("description")){
 
             if(!validator.isValid(description)){
                 return res.status(400).send({status:false, message:"Bad request please provoide valid description"})
@@ -125,29 +125,31 @@ const updateProduct = async function(req,res){
         }
           
 
-        if(style){
+        if(bodyArray.includes("style")){
 
             if(!validator.isValid(style)){
                 return res.status(400).send({status:false, message:"Bad request please provoide valid style"})
             }
         }
-
+        let availableSizes
         console.log(availableSizes)
           
-        if(availableSizes){
-
-            if(!validator.isValid(availableSizes)){
+        if(bodyArray.includes("availableSizes")){
+            if(!validator.isValid(req.body.availableSizes)){
                 return res.status(400).send({status:false, message:"Bad request please provoide valid availableSizes"})
             }
+            availableSizes = JSON.parse(req.body.availableSizes)
+            
             const isSize = validator.isValidSize(availableSizes)
             if(isSize != true){
-                return res.status(400).send({status:false, message:`Bad request for size ${isSize} so please provoide valid availableSizes from ["S", "XS","M","X", "L","XXL", "XL"]`})
+                return res.status(400).send({status:false, message:`Bad request for size ${isSize} so please provoide valid availableSizes only in array of string from ["S", "XS","M","X", "L","XXL", "XL"]`})
           
             }
+            req.body.availableSizes = availableSizes
         }
         //installment validation
 
-        if(installments){
+        if(bodyArray.includes("installments")){
             if(!validator.isValid(installments)){
                 return res.status(400).send({status:false, message:"Bad request please provoide valid installments number"})
             }
@@ -206,7 +208,7 @@ const getProduct = async function (req, res) {
         let data = req.query
 
       
-        if (!validator.isValidBody(data)) {
+        if (!validator.isValidBody(req.query)) {
           let search1 = await productModel.find({ isDeleted: false })
             .select({
               _id: 0,
@@ -240,8 +242,10 @@ const getProduct = async function (req, res) {
   
   
         let title=names
-        let availableSizes=size
-        
+        let availableSizes
+        if(req.query.size){
+        availableSizes=JSON.parse(size)
+        }
         //price =priceGreaterThan ,priceLessThan
         console.log(title,availableSizes,names,size,priceGreaterThan,priceLessThan )
         //  if(price){
@@ -420,16 +424,26 @@ module.exports.getProduct = getProduct
 
 const createProduct = async function (req, res) {
     try {
-        let availableSizes = JSON.parse(req.body.availableSizes)
-        console.log(availableSizes)
 
+        if (!validator.isValidBody(req.body) && !req.files) {
+            return res.status(400).send({ status: false, msg: "body should not be empty" })
+        }
+
+
+
+       
         const body = JSON.parse(JSON.stringify(req.body))
 
         let { title, description, price, currencyId, currencyFormat } = body
-            //const availableSizes = JSON.parse(availableSizes)
-        if (!validator.isValidBody(body)) {
-            return res.status(400).send({ status: false, msg: "body should not be empty" })
+
+        let availableSizes      
+        if(req.body.availableSizes){
+        availableSizes = JSON.parse(req.body.availableSizes)
+        console.log(availableSizes)
         }
+
+            //const availableSizes = JSON.parse(availableSizes)
+        
         if (!validator.isValid(title)) {
             return res.status(400).send({ status: false, msg: "title should not be empty" })
         }
@@ -438,7 +452,7 @@ const createProduct = async function (req, res) {
             title: { $regex: title, $options: "i" },
             isDeleted: false,
         });
-
+            
 
         const exactTitleMatch = [];
         for (let i = 0; i < isTitleExists.length; i++) {
@@ -483,7 +497,7 @@ const createProduct = async function (req, res) {
             return res.status(400).send({ status: false, msg: "currencyFormat should not be empty" })
         }
         if (!validator.isValidCurrencyFormat(currencyFormat)) {
-            return res.status(400).send({ status: false, msg: "please entre valid currency format" })
+            return res.status(400).send({ status: false, msg: "please entre valid Indian currency format '₹' " })
         }
         // if (!validator.isValid(productImage)) {
         //     return res.status(400).send({ status: false, msg: "productImage should not be empty" })
@@ -493,7 +507,7 @@ const createProduct = async function (req, res) {
         }
         const size = validator.isValidSize(availableSizes)
         if (size != true) {
-            return res.status(400).send({ status: false, msg: `${size} is not a valid size` })
+            return res.status(400).send({ status: false, msg: `${size} is not a valid size and size only accept in array of string` })
         }
         body.availableSizes = availableSizes
 
@@ -605,41 +619,7 @@ const deleteProduct = async function (req, res) {
 
 module.exports.deleteProduct = deleteProduct
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 module.exports.getProductById = getProductById
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 module.exports.createProduct = createProduct
 module.exports.updateProduct = updateProduct
 

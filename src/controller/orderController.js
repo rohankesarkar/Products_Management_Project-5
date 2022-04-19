@@ -8,98 +8,46 @@ const createOrder = async function (req, res) {
     try {
         
         req.body.userId = req.params.userId
-        let totalQuantity = 0;
-
+        
+        const {items, totalPrice,  totalItems, cancellable, totalQuantity} = req.body
         if(!validator.isValidBody(req.body)){
             return res.status(400).send({status:false, message:"Bad Request request body is empty"})
         }
-        const {items, totalPrice,  totalItems} = req.body
-
         const validItems =  items.filter((obj) => {
             return obj != null && Object.keys(obj).length
-        })
-    
+        })   
         if(!(items.length && validItems.length)){
             return res.status(400).send({staus:false, message:"please select the product to place order"})
-        }
-        
+        }       
         if(!(validator.isValidPrice(totalPrice) && validator.isValid(totalPrice))){
             return res.status(400).send({status:false, message:"pease provide price or enter valid price"})
         }
-
         if(!(/^[1-9]{1}[0-9]{0,15}$/.test(totalItems) && validator.isValid(totalItems))){ 
+            return res.status(400).send({status:false, message:"Bad request please provoide valid totalItems"})    
+        }
+        if(!(/^[1-9]{1}[0-9]{0,15}$/.test(totalQuantity) && validator.isValid(totalQuantity))){ 
+            return res.status(400).send({status:false, message:"Bad request please provoide valid totalQuantity"})    
+        }
+        if(cancellable){
+            if(!validator.isValid(cancellable)){
+                return res.status(400).send({status:false, message:"please provide valid input in cancllable it only accept Boolean values"})
+            }
 
-            return res.status(400).send({status:false, message:"Bad request please provoide valid totalItems"})
+            if(!["true", "false"].includes(cancellable)){
+                return res.status(400).send({status:false, message:"please provide valid input in cancllable it only accept Boolean values"})
         
+            }
+
         }
 
 
-            items.forEach((productObj) => {
-                    totalQuantity += Number(productObj.quantity)
-                })
-        req.body.totalQuantity = totalQuantity
-
-
-
-        // if (!(validator.isValidobjectId(cartId))) {
-        //     return res.status(400).send({ status: false, msg: "please provide valid cartId" })
-
-        // }
-
-//         if (!isValid(userId)) {
-//             return res.status(400).send({ status: false, msg: "please provide userId" })
-//         }
-// const isExistUserId = await userModel.findOne({ _id: userId , _id:})
-//         if (!isExistUserId) {
-
-
-            // const cartPresent = await cartModel.findById({ userId: userId}).select({ items: 1 , totalPrice: 1 , totalItems: 1 })
-            // let orderObj = {}
-            // if (cartPresent) {
-            //     cartPresent.items.forEach((productObj) => {
-            //         totalQuantity += Number(productObj.quantity)
-            //     })
-            //     orderObj = {
-            //         userId: userId,
-            //         items: cartPresent.items,
-            //         totalPrice: cartPresent.totalPrice,
-            //         totalItems: cartPresent.totalItems,
-            //         totalQuantity: totalQuantity
-            //     }
-            //     const orderData = await orderModel.create(orderObj)
-            //     return res.status(201).send({ status: true, msg: "Order created succesfully", data: orderData })
-            // } else {
-            //     return res.status(404).send({ status: fase, msg: "Cart not found" })
-            // }
-       // }
-
-           const orderData = await orderModel.create(req.body)
-             return res.status(201).send({ status: true, msg: "Order created succesfully", data: orderData })
-
+        const orderData = await orderModel.create(req.body)
+        return res.status(201).send({ status: true, msg: "Order created succesfully", data: orderData })
 
     } catch (error) {
         return res.status(500).send({ status: false, error: error.message })
     }
 }
-
-
-
-// {
-//     userId: {ObjectId, refs to User, mandatory},
-//     items: [{
-//       productId: {ObjectId, refs to Product model, mandatory},
-//       quantity: {number, mandatory, min 1}
-//     }],
-//     totalPrice: {number, mandatory, comment: "Holds total price of all the items in the cart"},
-//     totalItems: {number, mandatory, comment: "Holds total number of items in the cart"},
-//     totalQuantity: {number, mandatory, comment: "Holds total number of items in the cart"},
-//     cancellable: {boolean, default: true},
-//     status: {string, default: 'pending', enum[pending, completed, cancled]},
-//     deletedAt: {Date, when the document is deleted}, 
-//     isDeleted: {boolean, default: false},
-//     createdAt: {timestamp},
-//     updatedAt: {timestamp},
-//   }
 
 
 
@@ -118,17 +66,23 @@ const updateOrder = async function (req, res) {
         //     return res.status(404).send({ status: false, msg: "user not found" })
         // }
 
+        if(!validator.isValidBody(req.body)){
+            return res.status(400).send({status:false, message:"Bad Request request body is empty"})
+        }
 
 
         if (!validator.isValidobjectId(orderId)) {
             return res.status(400).send({ status: false, msg: "invalid orderId" })
         }
 
-        const orderExist = await orderModel.findOne({ orderId: orderId, userId:userId, isDeleted: false })
+        const orderExist = await orderModel.findOne({ _id: orderId, userId:userId, isDeleted: false })
         if (!orderExist) {
             return res.status(404).send({ status: false, msg: "order does not exist" })
         }
+
+      
         console.log(orderExist, orderExist.status)
+
         if(orderExist.status == "completed"){
             return res.status(400).send({status:false, message:"this order is already completed you can not change the status"})
         }

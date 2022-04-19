@@ -54,6 +54,11 @@ const registerUser = async function (req, res) {
   try {
    // const requestBody = req.body;
     const requestBody = req.body;
+    if (!validator.isValidBody(requestBody)) {
+      return res
+        .status(400)
+        .send({ status: false, message: "ERROR! : request body is empty" });
+    }
    // console.log(req.body.data)
     const address = JSON.parse(req.body.address)
    // console.log(requestBody)
@@ -63,76 +68,49 @@ const registerUser = async function (req, res) {
         .status(400)
         .send({ status: false, message: "ERROR! : request body is empty" });
     } else {
+
       const { fname, lname, phone, email, password, confirmPassword } = requestBody;
 
 
       let isName = /^[A-Za-z ]*$/;
 
       if (!validator.isValid(fname)) {
-        return res
-          .status(400)
-          .send({ status: false, message: "please enter name" });
+        return res.status(400).send({ status: false, message: "please enter name" });
       }
       if (!isName.test(fname)) {
-        return res
-          .status(422)
-          .send({ status: false, message: "enter valid name" });
+        return res.status(422).send({ status: false, message: "enter valid name" });
       }
-
-
       if (!validator.isValid(lname)) {
-        return res
-          .status(400)
-          .send({ status: false, message: "please enter name" });
+        return res.status(400).send({ status: false, message: "please enter name" });
       }
       if (!isName.test(lname)) {
-        return res
-          .status(422)
-          .send({ status: false, message: "enter valid name" });
+        return res.status(422).send({ status: false, message: "enter valid name" });
       }
-
-
       if (!validator.isValid(phone)) {
-        return res
-          .status(400)
-          .send({ status: false, message: "enter valid phone" });
+        return res.status(400).send({ status: false, message: "enter valid phone" });
       }
 
-      if (!/^[1-9]{1}\d{9}$/.test(phone)) {
-        return res
-          .status(422)
-          .send({
-            status: false,
-            message:
-              "please enter 10 digit number which does not contain 0 at starting position",
-          });
+      if (!validator.isValidPhone(phone)) {
+        return res.status(400).send({status: false,message:"Invaid Number:please enter 10 digit Indian Phone numbers ",});
       }
-
-
-      const isPhoneAlreadyUsed = await userModel.findOne({
-        phone,
-        isDeleted: false,
-      });
-
-      if (isPhoneAlreadyUsed) {
-        return res.status(409).send({
-          status: false,
-          message: `${phone} this phone number is already used so please put valid input`,
-        });
+      const isPhoneAlreadyUsed = await userModel.findOne({phone,isDeleted: false,});
+      if (isPhoneAlreadyUsed) {  
+        return res.status(409).send({status: false,message: `${phone} this phone number is already used so please put valid input`,});
       }
-
       if (!validator.isValid(email)) {
-        return res
-          .status(400)
-          .send({ status: false, message: "email is not present in input request" });
+        return res.status(400).send({ status: false, message: "email is not present in input request" });
       }     
       if (!validatEmail.isEmail(email)) {
         return res.status(400).send({ status: false, msg: "BAD REQUEST email is invalid " })
       }
-
+      
       if (!/^[^A-Z]*$/.test(email)) {
         return res.status(400).send({ status: false, msg: "BAD REQUEST please provied valid email which do not contain any Capital letter " })
       }
+      
+
+
+      
 
 
       const isEmailAlreadyUsed = await userModel.findOne({
@@ -157,7 +135,7 @@ const registerUser = async function (req, res) {
       if (!validator.isValidPassword(password)) {
         return res.status(400).send({
           status: false,
-          msg: "Please enter Minimum eight characters password, at least one uppercase letter, one lowercase letter, one number and one special character"
+          msg: "Please enter Minimum eight characters password, at least one uppercase letter, one lowercase letter, one number and one special character length : min=8, max=16"
 
         })
       }
@@ -337,7 +315,7 @@ const loginUser = async function (req, res) {
       },
       "PROJECT3BOOKMANAGEMENTPROJECTDONYBYGROUP7",
       {
-        expiresIn: "2m",
+        expiresIn: "221m",
       }
     );
     const userLogin = {
@@ -345,7 +323,7 @@ const loginUser = async function (req, res) {
         token:token
     }
 
-    res.setHeader("x-auth-token", token);
+    res.setHeader("Authorization",'Bearer'+' '+ token);
     return res.status(200).send({ status: true,message:"User login successfull", data: userLogin });
 
   } catch (error) {
@@ -396,33 +374,21 @@ module.exports.getUser = getUser
 const updateUser = async function(req,res){
     try{
     const userId = req.params.userId
-    let address = req.body.address
-
-
-
-    // console.log(req.body.address)
-    // if(!validator.isValid(address)){
-    //     return res.status(400).send({status:false, message:"invalid address or address is not present"})
-    // }
-
-
-
-
-
-
+    let address;
+    if(req.body.address){
+     address = JSON.parse(req.body.address)
+    }
 
     let requestBody =req.body
 
    // const requestBody = req.body
     
 
-    if(!validator.isValidBody(requestBody)){
-        return res
-        .status(400)
-        .send({ status: false, message: "ERROR! : request body is empty" });
+    if(!validator.isValidBody(req.body) && !req.files){
+        return res.status(400).send({ status: false, message: "ERROR! : request body is empty" });
     }
     
-    let { fname, lname, phone, email, password} = requestBody;
+    let { fname, lname, phone, email, password, profileImage} = requestBody;
     
 
     if(fname){
@@ -463,13 +429,13 @@ const updateUser = async function(req,res){
               .send({ status: false, message: "enter valid phone" });
           }
     
-        if (!/^[1-9]{1}\d{9}$/.test(phone)) {
+        if (!validator.isValidPhone(phone)) {
             return res
               .status(422)
               .send({
                 status: false,
                 message:
-                  "please enter 10 digit number which does not contain 0 at starting position",
+                  "Invaid Number:please enter 10 digit Indian Phone numbers ",
               });
           }
     
@@ -521,19 +487,11 @@ const updateUser = async function(req,res){
 
     if(password){
         if (!validator.isValid(password)) {
-            return res
-              .status(400)
-              .send({ status: false, message: "enter valid password" });
-          }
-    
-          
-          if (!validator.isValidPassword(password)) {
-            return res.status(400).send({
-              status: false,
-              msg: "Please enter Minimum eight characters password, at least one uppercase letter, one lowercase letter, one number and one special character"
-    
-            })
-          }
+            return res.status(400).send({ status: false, message: "enter valid password" });
+        }
+        if (!validator.isValidPassword(password)) {
+            return res.status(400).send({status: false,msg: "Please enter Minimum eight characters password, at least one uppercase letter, one lowercase letter, one number and one special character"})
+        }
 
           const salt = await bcrypt.genSalt(10) // idealy minimum 8 rounds required here we use 10 rounds
           const hashPassword = await bcrypt.hash(password,salt)

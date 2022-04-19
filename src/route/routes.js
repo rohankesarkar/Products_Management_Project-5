@@ -12,35 +12,36 @@ router.get('test-me', function(req,res){
     res.send("hello from get api")
 })
 
-router.post('/createUser', userController.registerUser)
+
+
+
+router.post('/register', userController.registerUser)
 router.get('/user/:userId/profile',auth.authentication, userController.getUser)
-router.post('/loginUser', userController.loginUser)
-router.put('/updateUser/:userId', auth.authorization, userController.updateUser)
-
-
-// please check availablesize regex validation
+router.post('/login', userController.loginUser)
+router.put('/user/:userId/profile', auth.authorization, userController.updateUser)
 
 
 
+router.post('/products', productController.createProduct)
+router.get('/products', productController.getProduct)
+router.get('/products/:productId', productController.getProductById)
+router.put('/products/:productId', productController.updateProduct)
+router.delete('/products/:productId', productController.deleteProduct)
 
-
-router.post('/createproduct', productController.createProduct)
-router.get('/getproduct', productController.getProduct)
-router.get('/getByProductId/:productId', productController.getProductById)
-router.put('/updateproduct/:productId', productController.updateProduct)
-router.delete('/deleteproduct/:productId', productController.deleteProduct)
-
-router.post('/users/:userId/cart', cartController.createCart)
-router.put('/users/:userId/cart', cartController.updateCart)
-router.get('/users/:userId/cart', cartController.getCartById)
-router.delete('/users/:userId/cart', cartController.deleteCart)
-
+router.post('/users/:userId/cart',auth.authentication, cartController.createCart)
+router.put('/users/:userId/cart',auth.authentication, cartController.updateCart)
+router.get('/users/:userId/cart',auth.authentication, cartController.getCartById)
+router.delete('/users/:userId/cart', auth.authentication,cartController.deleteCart)
 
 
 
 router.post('/users/:userId/orders', orderController.createOrder)
 router.put('/users/:userId/orders', orderController.updateOrder)
 
+
+router.get("*", async function(req,res){
+    return res.status(404).send({status:false, message:"page not found"})
+})
 
 
 

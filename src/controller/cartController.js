@@ -168,7 +168,7 @@ const updateCart = async (req, res) => {
     if(!validator.isValidBody(requestBody)){
         return res.status(400).send({status:false, message:"Bad Request request body is empty"})
     }
-    const {cartId, productId} = requestBody
+    const {cartId, productId, removeProduct} = requestBody
 
     
     if (!productId) {
@@ -182,6 +182,14 @@ const updateCart = async (req, res) => {
           .status(400)
           .send({ status: false, message: `this productId ${productId} Invalid` });
       }
+      if(!validator.isValid(removeProduct) || !["0", "1"].includes(removeProduct)){
+
+        return res.status(400).send({status:false , message:"removeProduct must required & it only contain 0 , 1 "})
+
+
+      }
+
+
       let productPresent = await productModel.findOne({
         _id: productId,
         isDeleted: false,
@@ -226,39 +234,43 @@ const updateCart = async (req, res) => {
         console.log("for")
 
         if(items[i].productId == productId){
+          if( Number(removeProduct) == 1){
             console.log("if")
            cartPresent.items[i].quantity = Number(cartPresent.items[i].quantity) -1
            console.log(items[i].quantity, cartPresent.items[i],items[i])
            cartPresent.totalPrice = Number(cartPresent.totalPrice) - Number(productPresent.price)  
-           if(Number(items[i].quantity) == 0){
+
+           if(Number(items[i].quantity) == 0 ){
+
             items.splice(i,1)
             cartPresent.totalItems = Number(cartPresent.totalItems) -1
+            
            }
+          }
+          if(Number(removeProduct) == 0){
+
+            //cartPresent.items[i].quantity = Number(cartPresent.items[i].quantity) -1
+           // console.log(items[i].quantity, cartPresent.items[i],items[i])
+            cartPresent.totalPrice = Number(cartPresent.totalPrice) - (Number(productPresent.price) *  Number(cartPresent.items[i].quantity))
+ 
+            
+ 
+             items.splice(i,1)
+             cartPresent.totalItems = Number(cartPresent.totalItems) -1
+             
+            
+
+
+
+
+          }
 
            const updatedCart =await cartModel.findByIdAndUpdate({_id:cartId},cartPresent, {new:true})
-           // const updateProduct =await productModel.findByIdAndUpdate({_id:productId},{$inc:{installments: 1}}, {new:true})
-            // if(Number(items[i].quantity) == 0){
-              
-
-            //   cartExists.totalItems = cartExists.totalItems = Number(cartExists.totalItems) - 1
-            //         cartExists.items[itemIndex].productId = { $unset: { "cartExists.items[itemIndex].productId": 1 } }
-            //         cartExists.totalPrice = Number(cartExists.totalPrice) - Number(productExist.price)
-
-            //         let removeProduct = await cartModel.findOneAndUpdate({ userId: userId }, cartExists, { new: true })
-            //         return res.status(200).send({ status: false, msg: "product removed successfully", data: removeProduct })
-
-
-
-
-            // console.log("innerif")
-                
-            //     items.splice(items[i],1)
-            //     return res.status(200).send({status:true, message:"Success : product Remove ", data:{updatedCart,removeProduct:1}})
-            // } else {
-                return res.status(200).send({status:true, message:"Success : product quantity decreamented ", data:{updatedCart,removeProduct:0}})
+           
+                return res.status(200).send({status:true, message:"Success : product quantity decreamented ", data:{updatedCart}})
      
 
-            // }
+           
 
         }
 
